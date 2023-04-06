@@ -1,3 +1,5 @@
+![Bolty](assets/bolty.jpg)
+
 # Bolty - NFC-based Lightning Network Payment Device
 
 Bolty is an ESP32-based device with NFC capabilities designed to provision BoltCards for contactless Bitcoin Lightning Network payments. This repository contains the necessary source code, STL files for 3D printing the device enclosure, and documentation to set up and use the Bolty device.
