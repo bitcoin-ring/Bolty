@@ -9,28 +9,6 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 - 3D printable enclosure design with an optional battery compartment
 - Provision and deprovision BoltCards offline
 
-## Repository Directory Structure
-
-bolty/
-│
-├── 3dfiles/
-│   ├── Case-Button.stl
-│   ├── Case-with battery-Case.stl
-│   ├── Case-with battery-Lid.stl
-│   └── Case-with battery.FCStd
-│
-├── data/
-│   ├── burn.html
-│   ├── favicon.ico
-│   ├── setup.html
-│   ├── style.css
-│   └── wipe.html
-│
-├── bolt.h
-├── bolty.ino
-└── gui.h
-
-
 ## Getting Started
 
 ### Prerequisites
