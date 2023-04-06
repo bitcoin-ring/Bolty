@@ -4,7 +4,7 @@
 //#define NTAG424DEBUG
 
 #include "gui.h"
-#include <Adafruit_PN532.h>
+#include <Adafruit_PN532_NTAG424.h>
 #include <SPI.h>
 #include <Wire.h>
 
