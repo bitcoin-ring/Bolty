@@ -41,7 +41,7 @@
 #define WIFI_AP_PASSWORD_LENGTH 8
 
 // remove for random password generation
-#define WIFI_AP_PASSWORD_STATIC "wango123"
+//#define WIFI_AP_PASSWORD_STATIC "wango123"
 
 #define MAX_BOLT_DEVICES 5
 char charpool[] = {
