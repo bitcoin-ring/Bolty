@@ -417,29 +417,29 @@
 URL: %url%
 </div>
 <div class="k" id="ks0">
-Key 0: %k0%
+Key 0: %ks0%
 </div>
 <div class="k" id="ks1">
-Key 1: %k1%
+Key 1: %ks1%
 </div>
 <div class="k" id="ks2">
-Key 2: %k2%
+Key 2: %ks2%
 </div>
 <div class="k" id="ks3">
-Key 3: %k3%
+Key 3: %ks3%
 </div>
 <div class="k" id="ks4">
-Key 4: %k4%
+Key 4: %ks4%
 </div>
 </div>
 <div class="button act onl">
 <a data-target="sm3" data-toggle="modal">new wallet</a>
 </div>
 <div class="button act onl">
-<a data-target="sm4" data-toggle="modal">import card</a>
+<a data-target="sm4" data-toggle="modal">import Bolt Card</a>
 </div>
 <div class="button act">
-<a data-target="sm1" data-toggle="modal">edit card</a>
+<a data-target="sm1" data-toggle="modal">edit Bolt Card</a>
 </div>
 <div class="button act now">
 <a data-target="sm5" data-toggle="modal">wallet</a>
@@ -454,10 +454,10 @@ Key 4: %k4%
 </div>
 <div id="sm1" class="modal">
   <div class="modal-window">
-      <h3>Key Setup</h3>
+      <h3>Edit Bolt Card</h3>
       <form data-t="/keys">
       <div class="cf">
-      <input type="text" id="card_name" maxlength="49" value="%cn%" required /><label for="card_name" class="pl">Name</label><input type="button" data-loc="true" id="crwal" value="create"/><br>
+      <input type="text" id="card_name" maxlength="49" value="%cn%" required /><label for="card_name" class="pl">Bolt Card Name</label><br>
       </div>
       <div class="cf">
       <input type="text" id="wallet_host" required  value="%wallet_host%"/><label for="wallet_host" class="pl">Wallet Host (optional)</label><br>
@@ -529,9 +529,9 @@ Key 4: %k4%
 </div>
 <div class="modal" id="sm3">
   <div class="modal-window">
-    <h3>Create wallet and card</h3>
+    <h3>Create LNbits wallet and Bolt Card</h3>
     <form>
-    <span>Enter a name for your new lnbits-wallet and boltcard. Then click on "create".</span>
+    <span>Enter a LNbits Server, a name for your new wallet and Bolt Card. Tap the reader with your Bolt Card to scan the UID. Then click on "create".</span>
     <div class="cf">
     <input type="text" id="host_new" maxlength="49" value="%wallet_host%" required /><label for="host_new" class="pl">LNbits host (default: https://legend.lnbits.com)</label>
     </div>
@@ -555,15 +555,16 @@ Key 4: %k4%
 </div>
 <div class="modal" id="sm4">
   <div class="modal-window">
-    <h3>Import bolt-card from lnbits</h3>
+    <h3>Import Bolt Card from LNbits</h3>
     <form data-j="ki" data-t="/keys">
     <span>
-    You can import a bolt-card by klicking on the QR-code icon and "copy link".
-    Paste the link in a browserwindow and switch to "raw". You should now see the json-code. Copy it and paste it below.</span>
-    Paste the json from lnbits here.<br> <br> 
+    You can import a Bolt Card from any LNbits-server. In the LNbits backend navigate to the Boltcards extension.
+    In the list of configured Bolt Cards, click on the QR-code icon of the Card you want to import and click "copy link".
+    Paste the link in a browserwindow. You should now see the json-code (In firefox switch to the "raw"-view). Copy it and paste it below.</span>
+    <br> <br> 
     Click the "next" button.
     <div class="cf">
-    <textarea id="ki" name="k">>>>Paste LNBITS JSON here...<<<</textarea>
+    <textarea id="ki" name="k" required></textarea><label for="ki" class="pl">Paste LNbits JSON here...</label>
     </div>
     <div class="cf">
     <input type="button" id="next" value="next" class="off"/><br>

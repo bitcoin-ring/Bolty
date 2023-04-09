@@ -408,7 +408,7 @@ void setup_display() {
   tft.setFreeFont(&FreeSans9pt7b);
   // tft.setFreeFont();
   // tft.setTextSize(2);
-  displayTextCentered(120, "NFC assistant");
+  displayTextCentered(120, "Bolt Card assistant");
   enablebrightnessctrl();
 }
 

@@ -2,7 +2,7 @@
 /*!
     @file     bolty.ino
     @author   Thilo
-
+    https://github.com/bitcoin-ring/Bolty
     This sketch will start a wifi in AP or STA mode (WIFIMODE_*). If you want to
    use STA mode you have to enter the WIFI credentials of your existing network.
     A webserver allows to import keydata  in form of the raw json of the lnbits
@@ -41,7 +41,7 @@
 #define WIFI_AP_PASSWORD_LENGTH 8
 
 // remove for random password generation
-//#define WIFI_AP_PASSWORD_STATIC "wango123"
+#define WIFI_AP_PASSWORD_STATIC "wango123"
 
 #define MAX_BOLT_DEVICES 5
 char charpool[] = {
@@ -239,10 +239,6 @@ void app_keysetup_loop() {
 
 String web_keysetup_processor(const String &var) {
   // Serial.println("web_keysetup_loop");
-  if (var == "cnn")
-    return String(active_bolt_config + 1).c_str();
-  if (var == "cn")
-    return mBoltConfig.card_name;
   if (var == "wallet_name")
     return mBoltConfig.wallet_name;
   if (var == "wallet_host")
@@ -251,23 +247,9 @@ String web_keysetup_processor(const String &var) {
     return mBoltConfig.wallet_url;
   if (var == "wallet_link")
     return mBoltConfig.wallet_url;
-  // return String(mBoltConfig.wallet_host) + "?/usr=" +
-  // String(mBoltConfig.wallet_url);
   if (var == "uid")
     return mBoltConfig.uid;
-  if (var == "url")
-    return mBoltConfig.url;
-  if (var == "k0")
-    return mBoltConfig.k0;
-  if (var == "k1")
-    return mBoltConfig.k1;
-  if (var == "k2")
-    return mBoltConfig.k2;
-  if (var == "k3")
-    return mBoltConfig.k3;
-  if (var == "k4")
-    return mBoltConfig.k4;
-  return String();
+  return processor_default(var);
 }
 
 void app_keysetup_end() { Serial.println("app_KEYSETUP_end"); }
@@ -300,16 +282,29 @@ void APP_BOLTBURN_loop() {
     dumpconfig();
   }
 }
-String web_burn_processor(const String &var) {
-  Serial.println("web_ringsetup_loop");
-  if (var == "job")
-    return "Burn";
+
+
+String shortenkeys(const String &var){
+  return var.substring(0,3) + "*************";
+}
+
+String processor_default(const String &var){
   if (var == "cnn")
     return String(active_bolt_config + 1).c_str();
   if (var == "cn")
     return mBoltConfig.card_name;
   if (var == "url")
     return mBoltConfig.url;
+  if (var == "ks0")
+    return shortenkeys(mBoltConfig.k0);
+  if (var == "ks1")
+    return shortenkeys(mBoltConfig.k1);
+  if (var == "ks2")
+    return shortenkeys(mBoltConfig.k2);
+  if (var == "ks3")
+    return shortenkeys(mBoltConfig.k3);
+  if (var == "ks4")
+    return shortenkeys(mBoltConfig.k4);
   if (var == "k0")
     return mBoltConfig.k0;
   if (var == "k1")
@@ -321,6 +316,13 @@ String web_burn_processor(const String &var) {
   if (var == "k4")
     return mBoltConfig.k4;
   return String();
+}
+
+String web_burn_processor(const String &var) {
+  Serial.println("web_ringsetup_loop");
+  if (var == "job")
+    return "Burn";
+  return processor_default(var);
 }
 void APP_BOLTBURN_end() { Serial.println("APP_BOLTBURN_end"); }
 // Ringsetup
@@ -351,23 +353,7 @@ String web_ringwipe_processor(const String &var) {
   Serial.println("web_ringwipe_loop");
   if (var == "job")
     return "Wipe";
-  if (var == "cnn")
-    return String(active_bolt_config + 1).c_str();
-  if (var == "cn")
-    return mBoltConfig.card_name;
-  if (var == "url")
-    return mBoltConfig.url;
-  if (var == "k0")
-    return mBoltConfig.k0;
-  if (var == "k1")
-    return mBoltConfig.k1;
-  if (var == "k2")
-    return mBoltConfig.k2;
-  if (var == "k3")
-    return mBoltConfig.k3;
-  if (var == "k4")
-    return mBoltConfig.k4;
-  return String();
+  return processor_default(var);
 }
 void APP_BOLTWIPE_end() { Serial.println("APP_BOLTWIPE_end"); }
 
@@ -555,9 +541,9 @@ void wifi_start() {
     myIP = WiFi.softAPIP();
   }
 
+  uint8_t connect_count = 0;
   if (mSettings.wifimode == WIFIMODE_STA) {
     WiFi.begin(mSettings.essid, mSettings.password);
-    uint8_t connect_count = 0;
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
       connect_count++;
@@ -584,6 +570,10 @@ void wifi_start() {
   if (!mSettings.wifi_enabled) {
     mSettings.wifi_enabled = true;
     saveSettings();
+    //set wifimode  after savesettings. we dont want to persist it if we fallback to apmode.
+    if ((mSettings.wifimode == WIFIMODE_STA) && (connect_count <= 10)) {
+      mSettings.wifimode = WIFIMODE_AP;
+    }
   }
   server.begin();
 }
@@ -669,7 +659,6 @@ void setup(void) {
   app_next = APP_BOLTBURN;
   app_status = APP_STATUS_START;
   mAppHandler[APP_KEYSETUP].app_title = "Key-Setup";
-  // mAppHandler[APP_KEYSETUP].app_desc = "Paste link from lnbits wallet";
   mAppHandler[APP_KEYSETUP].app_desc = "Use a webbrowser";
   mAppHandler[APP_KEYSETUP].app_start = app_keysetup_start;
   mAppHandler[APP_KEYSETUP].app_end = app_keysetup_end;
@@ -678,7 +667,7 @@ void setup(void) {
   mAppHandler[APP_KEYSETUP].app_bgcolor = fromrgb(0x3e, 0xaf, 0x7c);
 
   mAppHandler[APP_BOLTBURN].app_title = "Burn";
-  mAppHandler[APP_BOLTBURN].app_desc = "Burn your Boltring/card/tag";
+  mAppHandler[APP_BOLTBURN].app_desc = "Burn a Bolt Card";
   mAppHandler[APP_BOLTBURN].app_start = APP_BOLTBURN_start;
   mAppHandler[APP_BOLTBURN].app_end = APP_BOLTBURN_end;
   mAppHandler[APP_BOLTBURN].app_loop = APP_BOLTBURN_loop;
@@ -686,7 +675,7 @@ void setup(void) {
   mAppHandler[APP_BOLTBURN].app_bgcolor = fromrgb(0xff, 0xad, 0x33);
 
   mAppHandler[APP_BOLTWIPE].app_title = "Wipe";
-  mAppHandler[APP_BOLTWIPE].app_desc = "Wipe your Boltring/card/tag";
+  mAppHandler[APP_BOLTWIPE].app_desc = "Wipe a Bolt Card";
   mAppHandler[APP_BOLTWIPE].app_start = APP_BOLTWIPE_start;
   mAppHandler[APP_BOLTWIPE].app_end = APP_BOLTWIPE_end;
   mAppHandler[APP_BOLTWIPE].app_loop = APP_BOLTWIPE_loop;
@@ -749,7 +738,7 @@ void setup(void) {
         "<html><head><link rel='stylesheet' media='screen' "
         "href='https://fontlibrary.org/face/dejavu-sans-mono' "
         "type='text/css'></head><body><pre style='font-family: "
-        "DejaVuSansMonoBold;font-size: 0.2em;'>"); // font-size: 1vw;
+        "DejaVuSansMonoBold,monospace;font-size: 0.2em;'>"); // font-size: 1vw;
     String walurl = web_keysetup_processor("wallet_link");
     SendQR(walurl, response);
     response->print("</pre></body></html>");

@@ -175,8 +175,6 @@ textarea{
   outline: 0;
   background: #fefefe;
   border:0.033em #fff solid;
-  margin-left: 2.1875em;
-  margin-top: 1em;
   font-family: monospace;
   overflow: hide;
 }
@@ -329,6 +327,11 @@ input[type=file]::-webkit-file-upload-button {
   user-select: none;
 }
 .cf input:focus + .pl, input:valid + .pl {
+  top: -5px;
+  font-size: 10px;
+  color: #222;
+}
+.cf textarea:focus + .pl, textarea:valid + .pl {
   top: -5px;
   font-size: 10px;
   color: #222;
