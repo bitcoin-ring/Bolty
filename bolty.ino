@@ -40,8 +40,15 @@
 
 #define WIFI_AP_PASSWORD_LENGTH 8
 
-// remove for random password generation
+// remove next line for random password generation
 #define WIFI_AP_PASSWORD_STATIC "wango123"
+
+#define HTTP_CREDENTIAL_SIZE 16
+
+//iuf you change this do not exceed HTTP_CREDENTIAL_SIZE-1 chars!
+const char* http_default_username = "bolty";
+const char* http_default_password = "bolty";
+
 
 #define MAX_BOLT_DEVICES 5
 char charpool[] = {
@@ -83,6 +90,8 @@ struct sSettings {
   char password[65];
   uint8_t wifimode;
   bool wifi_enabled;
+  char http_username[HTTP_CREDENTIAL_SIZE];
+  char http_password[HTTP_CREDENTIAL_SIZE];
 };
 sSettings mSettings;
 
@@ -133,6 +142,8 @@ void loadSettings() {
     mSettings.password[0] = 0;
     mSettings.wifimode = WIFIMODE_AP;
     mSettings.wifi_enabled = 1;
+    memcpy(mSettings.http_username, http_default_username, HTTP_CREDENTIAL_SIZE);
+    memcpy(mSettings.http_password, http_default_password, HTTP_CREDENTIAL_SIZE);
   }
   dumpsettings();
 }
@@ -485,6 +496,8 @@ void dumpsettings() {
   Serial.println(mSettings.essid);
   Serial.println(mSettings.password);
   Serial.println(mSettings.wifi_enabled);
+  Serial.println(mSettings.http_username);
+  Serial.println(mSettings.http_password);
 }
 
 void checkparams(AsyncWebServerRequest *request) {
@@ -710,6 +723,8 @@ void setup(void) {
 
   // Route for keys / web page
   server.on("/setup", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if(!request->authenticate(mSettings.http_username, mSettings.http_password))
+        return request->requestAuthentication();
     app_next = APP_KEYSETUP;
     checkparams(request);
     AsyncWebServerResponse *response = request->beginResponse(
@@ -729,7 +744,30 @@ void setup(void) {
                   web_ringwipe_processor);
   });
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(SPIFFS, "/style.css");
+    AsyncWebServerResponse *response = request->beginResponse(
+        SPIFFS, "/style.css", String());
+    response->addHeader("last-modified", "Mon, 13 Jun 2022 11:05:21 GMT");
+    response->addHeader("expires", "Sun, 13 Jun 2032 11:05:21 GMT");
+    response->addHeader("cache-control", "max-age=86400");
+    request->send(response);
+  });
+  server.on("/setup.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if(!request->authenticate(mSettings.http_username, mSettings.http_password))
+        return request->requestAuthentication();
+    AsyncWebServerResponse *response = request->beginResponse(
+        SPIFFS, "/setup.js", String());
+    response->addHeader("last-modified", "Mon, 13 Jun 2022 11:05:21 GMT");
+    response->addHeader("expires", "Sun, 13 Jun 2032 11:05:21 GMT");
+    response->addHeader("cache-control", "max-age=86400");
+    request->send(response);
+  });
+  server.on("/bolty.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse(
+        SPIFFS, "/bolty.js", String());
+    response->addHeader("last-modified", "Mon, 13 Jun 2022 11:05:21 GMT");
+    response->addHeader("expires", "Sun, 13 Jun 2032 11:05:21 GMT");
+    response->addHeader("cache-control", "max-age=86400");
+    request->send(response);
   });
   server.on("/qr", HTTP_GET, [](AsyncWebServerRequest *request) {
     AsyncResponseStream *response =
@@ -767,6 +805,8 @@ void setup(void) {
 
   AsyncCallbackJsonWebHandler *handler2 = new AsyncCallbackJsonWebHandler(
       "/keys", [](AsyncWebServerRequest *request, JsonVariant &json) {
+      if(!request->authenticate(mSettings.http_username, mSettings.http_password))
+          return request->requestAuthentication();
         Serial.println("received keys");
         StaticJsonDocument<200> data;
         if (json.is<JsonArray>()) {
@@ -805,6 +845,8 @@ void setup(void) {
 
   AsyncCallbackJsonWebHandler *handlerwifi = new AsyncCallbackJsonWebHandler(
       "/wifi", [](AsyncWebServerRequest *request, JsonVariant &json) {
+      if(!request->authenticate(mSettings.http_username, mSettings.http_password))
+        return request->requestAuthentication();
         Serial.println("received wifi-settings");
         StaticJsonDocument<200> data;
         if (json.is<JsonArray>()) {
@@ -829,6 +871,35 @@ void setup(void) {
         ESP.restart();
       });
   server.addHandler(handlerwifi);
+  
+  AsyncCallbackJsonWebHandler *handlerac = new AsyncCallbackJsonWebHandler(
+      "/ac", [](AsyncWebServerRequest *request, JsonVariant &json) {
+      if(!request->authenticate(mSettings.http_username, mSettings.http_password))
+        return request->requestAuthentication();
+        Serial.println("received credential-settings");
+        StaticJsonDocument<200> data;
+        if (json.is<JsonArray>()) {
+          data = json.as<JsonArray>();
+        } else if (json.is<JsonObject>()) {
+          data = json.as<JsonObject>();
+        }
+        if ((strlen(data["http_u"]) >= HTTP_CREDENTIAL_SIZE) || (strlen(data["http_p"]) >= HTTP_CREDENTIAL_SIZE)){
+          request->send(505, "application/json",
+                      "{\"status\":\"credentials too long\"}");
+          return;
+        }
+        if (data["http_u"] != "") {
+          strcpy(mSettings.http_username, data["http_u"]);
+        }
+        if (data["http_p"] != "") {
+          strcpy(mSettings.http_password, data["http_p"]);
+        }
+        saveSettings();
+        request->send(200, "application/json",
+                      "{\"status\":\"received_credentials\"}");
+        ESP.restart();
+      });
+  server.addHandler(handlerac);
 
   // run handleUpload function when any file is uploaded
   server.on(
