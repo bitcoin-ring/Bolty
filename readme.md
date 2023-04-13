@@ -29,7 +29,17 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 2. Assemble the hardware components:
 
 	- Solder the NFC module to the ESP32 development board.   
-	...instructions coming soon.
+<table style="width: 30em;">
+<tr><th>TTGO T-Display</th><th>PN532 Breakoutboard</th></tr>
+<tr><td>3V</td><td>VCC</td></tr>
+<tr><td>GND</td><td>GND</td></tr>
+<tr><td>PIN12</td><td>MISO</td></tr>
+<tr><td>PIN13</td><td>MOSI</td></tr>
+<tr><td>PIN15</td><td>SS</td></tr>
+<tr><td>PIN2</td><td>RSTPDN (optional)</td></tr>
+<tr><td>PIN17</td><td>SCK</td></tr>
+</table>
+Make shure the microswitch on the NFC breakoutboard is set to SPI-configuration.
 
 3. Navigate to the bolty/3dfiles folder and 3D print the enclosure files based on your preferences:
 
