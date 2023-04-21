@@ -20,7 +20,7 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 - A 3D printer for printing the enclosure (optional)
 - A lipo-battery (optional).
 
-### Hardware Assembly
+- [ ] ### Hardware Assembly
 
 1. Clone this repository to your local machine:
 	```shell
@@ -115,3 +115,4 @@ This project is licensed under the Apache 2.0 License. See the LICENSE file for 
 
 ## Support and Contact
 If you encounter any issues or have questions, please open an issue on GitHub.
+You can also ask on https://t.me/LNBolty

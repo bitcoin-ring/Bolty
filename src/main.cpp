@@ -27,7 +27,7 @@
 #define DYNAMIC_JSON_DOCUMENT_SIZE 1024
 #include "ArduinoJson.h"
 #include "AsyncJson.h"
-#include "ESPAsyncWebSrv.h"
+#include "ESPAsyncWebServer.h"
 //#include <WiFiClient.h>
 #include "FS.h"
 #include "SPIFFS.h"
@@ -118,6 +118,29 @@ struct sAppHandler {
 };
 
 sAppHandler mAppHandler[APPS];
+
+void dumpconfig() {
+  Serial.println(mBoltConfig.wallet_name);
+  Serial.println(mBoltConfig.wallet_host);
+  Serial.println(mBoltConfig.wallet_url);
+  Serial.println(mBoltConfig.uid);
+  Serial.println(mBoltConfig.card_name);
+  Serial.println(mBoltConfig.url);
+  Serial.println(mBoltConfig.k0);
+  Serial.println(mBoltConfig.k1);
+  Serial.println(mBoltConfig.k2);
+  Serial.println(mBoltConfig.k3);
+  Serial.println(mBoltConfig.k4);
+}
+
+void dumpsettings() {
+  Serial.println(mSettings.wifimode);
+  Serial.println(mSettings.essid);
+  Serial.println(mSettings.password);
+  Serial.println(mSettings.wifi_enabled);
+  Serial.println(mSettings.http_username);
+  Serial.println(mSettings.http_password);
+}
 
 void saveSettings() {
   char path[20];
@@ -248,6 +271,40 @@ void app_keysetup_loop() {
   delay(50);
 }
 
+String shortenkeys(const String &var){
+  return var.substring(0,3) + "*************";
+}
+
+String processor_default(const String &var){
+  if (var == "cnn")
+    return String(active_bolt_config + 1).c_str();
+  if (var == "cn")
+    return mBoltConfig.card_name;
+  if (var == "url")
+    return mBoltConfig.url;
+  if (var == "ks0")
+    return shortenkeys(mBoltConfig.k0);
+  if (var == "ks1")
+    return shortenkeys(mBoltConfig.k1);
+  if (var == "ks2")
+    return shortenkeys(mBoltConfig.k2);
+  if (var == "ks3")
+    return shortenkeys(mBoltConfig.k3);
+  if (var == "ks4")
+    return shortenkeys(mBoltConfig.k4);
+  if (var == "k0")
+    return mBoltConfig.k0;
+  if (var == "k1")
+    return mBoltConfig.k1;
+  if (var == "k2")
+    return mBoltConfig.k2;
+  if (var == "k3")
+    return mBoltConfig.k3;
+  if (var == "k4")
+    return mBoltConfig.k4;
+  return String();
+}
+
 String web_keysetup_processor(const String &var) {
   // Serial.println("web_keysetup_loop");
   if (var == "wallet_name")
@@ -295,40 +352,6 @@ void APP_BOLTBURN_loop() {
 }
 
 
-String shortenkeys(const String &var){
-  return var.substring(0,3) + "*************";
-}
-
-String processor_default(const String &var){
-  if (var == "cnn")
-    return String(active_bolt_config + 1).c_str();
-  if (var == "cn")
-    return mBoltConfig.card_name;
-  if (var == "url")
-    return mBoltConfig.url;
-  if (var == "ks0")
-    return shortenkeys(mBoltConfig.k0);
-  if (var == "ks1")
-    return shortenkeys(mBoltConfig.k1);
-  if (var == "ks2")
-    return shortenkeys(mBoltConfig.k2);
-  if (var == "ks3")
-    return shortenkeys(mBoltConfig.k3);
-  if (var == "ks4")
-    return shortenkeys(mBoltConfig.k4);
-  if (var == "k0")
-    return mBoltConfig.k0;
-  if (var == "k1")
-    return mBoltConfig.k1;
-  if (var == "k2")
-    return mBoltConfig.k2;
-  if (var == "k3")
-    return mBoltConfig.k3;
-  if (var == "k4")
-    return mBoltConfig.k4;
-  return String();
-}
-
 String web_burn_processor(const String &var) {
   Serial.println("web_ringsetup_loop");
   if (var == "job")
@@ -367,6 +390,99 @@ String web_ringwipe_processor(const String &var) {
   return processor_default(var);
 }
 void APP_BOLTWIPE_end() { Serial.println("APP_BOLTWIPE_end"); }
+
+void wifi_stop() {
+  server.end();
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  esp_wifi_stop();
+  Serial.println("WIFI: Disconnected");
+  delay(100);
+  WiFi.mode(WIFI_OFF);
+  delay(100);
+  if (mSettings.wifi_enabled) {
+    mSettings.wifi_enabled = false;
+    saveSettings();
+  }
+}
+
+void wifi_start() {
+  // if we have credentials try connecting. WIFIMODE_STA will fallback to
+  // mSettings.wifimode == WIFIMODE_AP
+  if ((mSettings.essid != "") && (mSettings.password != "")) {
+    mSettings.wifimode = WIFIMODE_STA;
+  }
+  if (mSettings.wifimode == WIFIMODE_AP) {
+#ifndef WIFI_AP_PASSWORD_STATIC
+    randomchar(ap_password, sizeof(ap_password));
+#endif
+    WiFi.softAP(ap_ssid, ap_password);
+    myIP = WiFi.softAPIP();
+  }
+
+  uint8_t connect_count = 0;
+  if (mSettings.wifimode == WIFIMODE_STA) {
+    WiFi.begin(mSettings.essid, mSettings.password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      connect_count++;
+      Serial.println("Connecting to WiFi..");
+      // fall back to AP mode if we cannot connect for 10 seconds
+      if (connect_count > 10) {
+        Serial.println("Cannot connect to Network. Fallback to AP-Mode.");
+        wifi_stop();
+        delay(50);
+        mSettings.wifimode = WIFIMODE_AP;
+#ifndef WIFI_AP_PASSWORD_STATIC
+        randomchar(ap_password, sizeof(ap_password));
+#endif
+        WiFi.softAP(ap_ssid, ap_password);
+        myIP = WiFi.softAPIP();
+        break;
+      }
+    }
+    // still STA mode? then we should be connected by now!
+    if (mSettings.wifimode == WIFIMODE_STA) {
+      myIP = WiFi.localIP();
+    }
+  }
+  if (!mSettings.wifi_enabled) {
+    mSettings.wifi_enabled = true;
+    saveSettings();
+    //set wifimode  after savesettings. we dont want to persist it if we fallback to apmode.
+    if ((mSettings.wifimode == WIFIMODE_STA) && (connect_count <= 10)) {
+      mSettings.wifimode = WIFIMODE_AP;
+    }
+  }
+  server.begin();
+}
+
+void wifi_toogle() {
+  if (mSettings.wifi_enabled) {
+    wifi_stop();
+  } else {
+    wifi_start();
+  }
+}
+
+void nfc_start() {
+  Serial.println("switching nfc on");
+  digitalWrite(PN532_RSTPD_N, HIGH);
+}
+
+void nfc_stop() {
+  Serial.println("switching nfc off");
+  digitalWrite(PN532_RSTPD_N, LOW);
+}
+
+
+String getIpAddress() {
+  if (mSettings.wifimode == WIFIMODE_AP)
+    myIP = WiFi.softAPIP();
+  if (mSettings.wifimode == WIFIMODE_STA)
+    myIP = WiFi.localIP();
+  return myIP.toString();
+}
 
 uint8_t lineh = 21;
 void update_screen() {
@@ -477,29 +593,6 @@ void app_stateengine() {
   }
 }
 
-void dumpconfig() {
-  Serial.println(mBoltConfig.wallet_name);
-  Serial.println(mBoltConfig.wallet_host);
-  Serial.println(mBoltConfig.wallet_url);
-  Serial.println(mBoltConfig.uid);
-  Serial.println(mBoltConfig.card_name);
-  Serial.println(mBoltConfig.url);
-  Serial.println(mBoltConfig.k0);
-  Serial.println(mBoltConfig.k1);
-  Serial.println(mBoltConfig.k2);
-  Serial.println(mBoltConfig.k3);
-  Serial.println(mBoltConfig.k4);
-}
-
-void dumpsettings() {
-  Serial.println(mSettings.wifimode);
-  Serial.println(mSettings.essid);
-  Serial.println(mSettings.password);
-  Serial.println(mSettings.wifi_enabled);
-  Serial.println(mSettings.http_username);
-  Serial.println(mSettings.http_password);
-}
-
 void checkparams(AsyncWebServerRequest *request) {
   if (request->hasParam("d")) {
     AsyncWebParameter *p = request->getParam("d");
@@ -530,98 +623,6 @@ void randomchar(char *outbuf, uint8_t count) {
     Serial.println(outbuf[i]);
   }
   outbuf[count] = 0;
-}
-
-String getIpAddress() {
-  if (mSettings.wifimode == WIFIMODE_AP)
-    myIP = WiFi.softAPIP();
-  if (mSettings.wifimode == WIFIMODE_STA)
-    myIP = WiFi.localIP();
-  return myIP.toString();
-}
-
-void wifi_start() {
-  // if we have credentials try connecting. WIFIMODE_STA will fallback to
-  // mSettings.wifimode == WIFIMODE_AP
-  if ((mSettings.essid != "") && (mSettings.password != "")) {
-    mSettings.wifimode = WIFIMODE_STA;
-  }
-  if (mSettings.wifimode == WIFIMODE_AP) {
-#ifndef WIFI_AP_PASSWORD_STATIC
-    randomchar(ap_password, sizeof(ap_password));
-#endif
-    WiFi.softAP(ap_ssid, ap_password);
-    myIP = WiFi.softAPIP();
-  }
-
-  uint8_t connect_count = 0;
-  if (mSettings.wifimode == WIFIMODE_STA) {
-    WiFi.begin(mSettings.essid, mSettings.password);
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      connect_count++;
-      Serial.println("Connecting to WiFi..");
-      // fall back to AP mode if we cannot connect for 10 seconds
-      if (connect_count > 10) {
-        Serial.println("Cannot connect to Network. Fallback to AP-Mode.");
-        wifi_stop();
-        delay(50);
-        mSettings.wifimode = WIFIMODE_AP;
-#ifndef WIFI_AP_PASSWORD_STATIC
-        randomchar(ap_password, sizeof(ap_password));
-#endif
-        WiFi.softAP(ap_ssid, ap_password);
-        myIP = WiFi.softAPIP();
-        break;
-      }
-    }
-    // still STA mode? then we should be connected by now!
-    if (mSettings.wifimode == WIFIMODE_STA) {
-      myIP = WiFi.localIP();
-    }
-  }
-  if (!mSettings.wifi_enabled) {
-    mSettings.wifi_enabled = true;
-    saveSettings();
-    //set wifimode  after savesettings. we dont want to persist it if we fallback to apmode.
-    if ((mSettings.wifimode == WIFIMODE_STA) && (connect_count <= 10)) {
-      mSettings.wifimode = WIFIMODE_AP;
-    }
-  }
-  server.begin();
-}
-
-void wifi_stop() {
-  server.end();
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  esp_wifi_stop();
-  Serial.println("WIFI: Disconnected");
-  delay(100);
-  WiFi.mode(WIFI_OFF);
-  delay(100);
-  if (mSettings.wifi_enabled) {
-    mSettings.wifi_enabled = false;
-    saveSettings();
-  }
-}
-
-void wifi_toogle() {
-  if (mSettings.wifi_enabled) {
-    wifi_stop();
-  } else {
-    wifi_start();
-  }
-}
-
-void nfc_start() {
-  Serial.println("switching nfc on");
-  digitalWrite(PN532_RSTPD_N, HIGH);
-}
-
-void nfc_stop() {
-  Serial.println("switching nfc off");
-  digitalWrite(PN532_RSTPD_N, LOW);
 }
 
 // handles uploads
