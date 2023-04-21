@@ -29,7 +29,7 @@ function updatestatus(){
                 }
             }
             if (o.cnn != document.body.getAttribute('data-confno')){
-                window.location.reload();
+                window.location.href = window.location.origin;
             }
             setTimeout(updatestatus, 300);
         }
@@ -55,7 +55,7 @@ function updateform(url, data){
                 window.location.href = "/wipe";
             }
             if (o.cnn != confno){
-                window.location.reload();
+                window.location.href = window.location.origin;
             }
             setTimeout(updatestatus, 300);
         }

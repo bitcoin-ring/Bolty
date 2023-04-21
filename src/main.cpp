@@ -104,6 +104,8 @@ IPAddress myIP;
 uint8_t active_bolt_config;
 sBoltConfig mBoltConfig;
 
+bool signal_update_screen = false;
+
 typedef void (*tAppHandler)();
 typedef void (*tEvtHandler)(uint8_t btn, uint8_t evt);
 
@@ -508,6 +510,7 @@ void update_screen() {
     SIpAddress = getIpAddress();
     displayTextLeft(ofs + (6 * lineh), SIpAddress);
   }
+  signal_update_screen = false;
 }
 
 void handle_events() {
@@ -519,7 +522,7 @@ void handle_events() {
       active_bolt_config = 0;
     }
     loadBoltConfig(active_bolt_config);
-    update_screen();
+    signal_update_screen = true;
   }
   // Button 1 short clicky = next app
   if ((sharedvars.appbuttons[1] == 1) && (app_active != APP_KEYSETUP)) {
@@ -532,7 +535,7 @@ void handle_events() {
   // Button 0 long clicky =
   if (sharedvars.appbuttons[0] == 2) {
     wifi_toogle();
-    update_screen();
+    signal_update_screen = true;
   }
   // Button 1 long clicky =
   if (sharedvars.appbuttons[1] == 2) {
@@ -559,6 +562,10 @@ void handle_events() {
 
 void app_stateengine() {
   handle_events();
+  if (signal_update_screen){
+      update_screen();
+  }
+
   if (app_next >= APPS)
     app_next = 0;
   // do not switch to keysetup using buttons
@@ -607,6 +614,7 @@ void checkparams(AsyncWebServerRequest *request) {
           constrain((active_bolt_config + 1), 0, MAX_BOLT_DEVICES - 1);
     }
     loadBoltConfig(active_bolt_config);
+    signal_update_screen = true;
   }
   Serial.println(active_bolt_config);
 }
