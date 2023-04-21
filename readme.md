@@ -20,7 +20,7 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 - A 3D printer for printing the enclosure (optional)
 - A lipo-battery (optional).
 
-- [ ] ### Hardware Assembly
+### Hardware Assembly
 
 1. Clone this repository to your local machine:
 	```shell
@@ -29,18 +29,18 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 2. Assemble the hardware components:
 
 	- Solder the NFC module to the ESP32 development board.   
-<table style="width: 30em;">
-<tr><th>TTGO T-Display</th><th>PN532 Breakoutboard</th></tr>
-<tr><td>3V</td><td>VCC</td></tr>
-<tr><td>GND</td><td>GND</td></tr>
-<tr><td>PIN12</td><td>MISO</td></tr>
-<tr><td>PIN13</td><td>MOSI</td></tr>
-<tr><td>PIN15</td><td>SS</td></tr>
-<tr><td>PIN2</td><td>RSTPDN (optional)</td></tr>
-<tr><td>PIN17</td><td>SCK</td></tr>
-</table>
-Make shure the microswitch on the NFC breakoutboard is set to SPI-configuration.
-
+		<table style="width: 30em;">
+		<tr><th>TTGO T-Display</th><th>PN532 Breakoutboard</th></tr>
+		<tr><td>3V</td><td>VCC</td></tr>
+		<tr><td>GND</td><td>GND</td></tr>
+		<tr><td>PIN12</td><td>MISO</td></tr>
+		<tr><td>PIN13</td><td>MOSI</td></tr>
+		<tr><td>PIN15</td><td>SS</td></tr>
+		<tr><td>PIN2</td><td>RSTPDN (optional)</td></tr>
+		<tr><td>PIN17</td><td>SCK</td></tr>
+		</table>
+		Make shure the microswitch on the NFC breakoutboard is set to SPI-configuration.
+		
 3. Navigate to the bolty/3dfiles folder and 3D print the enclosure files based on your preferences:
 
 	- 2x Case-Button.stl
@@ -51,23 +51,17 @@ Make shure the microswitch on the NFC breakoutboard is set to SPI-configuration.
 
 ### Firmware Installation and Configuration
 
-1. Install the required dependencies and libraries for the ESP32 development board.
-	
-	Arduino-IDE
-	- esp32 version 1.0.6
-	- Esp32 Sketch Data Upload
- 	Libraries:
-	- ArduinoJson version 6.20.0
-	- ESPAsyncWebSrv version 1.2.6
-	- Patched Adafruit_PN532_NTAG424 with ntag424 support
-		from https://github.com/bitcoin-ring/Adafruit-PN532-NTAG424
-	- Button2 version 1.2.0
-	- qrcode version 0.0.1
-	- TFT_eSPI version 2.2.20
+1. Install the [platformio](https://docs.platformio.org/en/latest/core/installation/methods/index.html) build system.
 
-2. Open the bolty.ino in Arduino-IDE and upload the data-folder using "Esp32 Sketch Data Upload":
+2. Upload the data folder to the spiffs-partition.
+In the project-directory run:
+> platformio run -t uploadfs
 
-3. Compile and upload the firmware to the ESP32 board.
+**Attention: Step 2. should only be done for the first time. If you repeat it at a later stage all keydata and settings on the esp32 will be lost.**
+
+3. Compile and upload the firmware
+In the project-directory run:
+> platformio run -t upload
 
 4. Power on the device and wait for the display to show you a set of wifi credentials. Bolty can either work in AP-mode or STA-Mode. Default is AP-Mode and the ESS-ID is always "Bolty", the password is random, also you should see an ip-adress at the bottom of the screen.
 
