@@ -161,14 +161,14 @@ public: // Access specifier
 
   void setCurKey(String key, uint8_t keyno) { setKey(key_cur[keyno], key); }
 
-  void begin() {
+  bool begin() {
 
     nfc->begin();
 
     uint32_t versiondata = nfc->getFirmwareVersion();
     if (!versiondata) {
       Serial.print("Didn't find PN53x board");
-      while (1)
+      return false;
         ; // halt
     }
     // Got ok data, print it out!
@@ -183,6 +183,7 @@ public: // Access specifier
     nfc->SAMConfig();
 
     Serial.println("NFC Ready...");
+    return true;
   }
 
   String get_job_status() { return boltstatustext[job_status]; }

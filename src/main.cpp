@@ -106,6 +106,8 @@ sBoltConfig mBoltConfig;
 
 bool signal_update_screen = false;
 
+bool bolty_hw_ready = false;
+
 typedef void (*tAppHandler)();
 typedef void (*tEvtHandler)(uint8_t btn, uint8_t evt);
 
@@ -259,8 +261,10 @@ void app_keysetup_loop() {
     lasttime = millis();
     tft.setFreeFont(&FreeSans9pt7b);
     tft.setTextColor(APPRED);
-    bool success = bolt.scanUID();
-    app_message = bolt.getScannedUid();
+    if (bolty_hw_ready){
+      bool success = bolt.scanUID();
+      app_message = bolt.getScannedUid();
+    }
     if (app_message == "") {
       app_message = default_app_message;
     }
@@ -338,18 +342,26 @@ void APP_BOLTBURN_loop() {
   }
   previousMillis = millis();
   Interval = 100;
-  bolt.setDefautKeysCur();
-  bolt.setNewKey(mBoltConfig.k0, 0);
-  bolt.setNewKey(mBoltConfig.k1, 1);
-  bolt.setNewKey(mBoltConfig.k2, 2);
-  bolt.setNewKey(mBoltConfig.k3, 3);
-  bolt.setNewKey(mBoltConfig.k4, 4);
-  String lnurl = String(mBoltConfig.url);
-  uint8_t burn_result = bolt.burn(lnurl);
-  if (burn_result != JOBSTATUS_WAITING) {
-    previousMillis = millis();
-    Interval = 3000;
-    dumpconfig();
+  if (bolty_hw_ready){
+    bolt.setDefautKeysCur();
+    bolt.setNewKey(mBoltConfig.k0, 0);
+    bolt.setNewKey(mBoltConfig.k1, 1);
+    bolt.setNewKey(mBoltConfig.k2, 2);
+    bolt.setNewKey(mBoltConfig.k3, 3);
+    bolt.setNewKey(mBoltConfig.k4, 4);
+    String lnurl = String(mBoltConfig.url);
+    uint8_t burn_result = bolt.burn(lnurl);
+    if (burn_result != JOBSTATUS_WAITING) {
+      previousMillis = millis();
+      Interval = 3000;
+      dumpconfig();
+    }
+  }
+  else{
+    tft.setFreeFont(&FreeSans9pt7b);
+    tft.setTextColor(APPRED);
+    tft.fillRect(0, -3 + (3 * 23), tft.width(), 21, APPWHITE);
+    displayTextCentered(-3 + (4 * 21), "nfc hw not ready");
   }
 }
 
@@ -371,17 +383,25 @@ void APP_BOLTWIPE_loop() {
   }
   previousMillis = millis();
   Interval = 100;
-  bolt.setDefautKeysNew();
-  bolt.setCurKey(mBoltConfig.k0, 0);
-  bolt.setCurKey(mBoltConfig.k1, 1);
-  bolt.setCurKey(mBoltConfig.k2, 2);
-  bolt.setCurKey(mBoltConfig.k3, 3);
-  bolt.setCurKey(mBoltConfig.k4, 4);
-  uint8_t wipe_result = bolt.wipe();
-  if (wipe_result != JOBSTATUS_WAITING) {
-    previousMillis = millis();
-    Interval = 3000;
-    dumpconfig();
+  if (bolty_hw_ready){
+    bolt.setDefautKeysNew();
+    bolt.setCurKey(mBoltConfig.k0, 0);
+    bolt.setCurKey(mBoltConfig.k1, 1);
+    bolt.setCurKey(mBoltConfig.k2, 2);
+    bolt.setCurKey(mBoltConfig.k3, 3);
+    bolt.setCurKey(mBoltConfig.k4, 4);
+    uint8_t wipe_result = bolt.wipe();
+    if (wipe_result != JOBSTATUS_WAITING) {
+      previousMillis = millis();
+      Interval = 3000;
+      dumpconfig();
+    }
+  }
+  else{
+    tft.setFreeFont(&FreeSans9pt7b);
+    tft.setTextColor(APPRED);
+    tft.fillRect(0, -3 + (3 * 23), tft.width(), 21, APPWHITE);
+    displayTextCentered(-3 + (4 * 21), "nfc hw not ready");
   }
 }
 
@@ -675,7 +695,7 @@ void setup(void) {
   setup_display();
   pinMode(PN532_RSTPD_N, OUTPUT);
   nfc_start();
-  bolt.begin();
+  bolty_hw_ready = bolt.begin();
   Serial.println("Setup done!");
   app_active = APP_KEYSETUP;
   app_next = APP_BOLTBURN;
