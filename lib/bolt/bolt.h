@@ -1,7 +1,6 @@
 #ifndef BOLT_H
 #define BOLT_H
 
-//#define NTAG424DEBUG
 
 #include "gui.h"
 #include <Adafruit_PN532_NTAG424.h>
@@ -274,17 +273,22 @@ public: // Access specifier
         nfc->ntag424_ISOSelectFileById(fileid);
         uint8_t FileSetting[16];
         uint8_t uriIdentifier = 0;
-        int piccDataOffset = lnurl.length() + 10;
-        int sdmMacOffset = lnurl.length() + 45;
+        uint8_t piccDataOffset = lnurl.length() + 10;
+        uint8_t sdmMacOffset = lnurl.length() + 45;
         lnurl += "?p=00000000000000000000000000000000&c=0000000000000000";
-        uint8_t len = lnurl.length();
+        int len = lnurl.length();
+		if (len > 0xff){
+			set_job_status_id(JOBSTATUS_ERROR);
+			Serial.println("lnurl cannot be longer than 256");
+			return job_status;
+		}
         uint8_t ndefheader[7] = {
             0x0,     /* Tag Field (0x03 = NDEF Message) */
-            len + 5, /* Payload Length (not including 0xFE trailer) */
+            (uint8_t) (len + 5), /* Payload Length (not including 0xFE trailer) */
             0xD1, /* NDEF Record Header (TNF=0x1:Well known record + SR + ME +
                      MB) */
             0x01, /* Type Length for the record type indicator */
-            (uint8_t)(len + 1), /* Payload len */
+            (uint8_t) (len + 1), /* Payload len */
             0x55,         /* Record Type Indicator (0x55 or 'U' = URI Record) */
             uriIdentifier /* URI Prefix (ex. 0x01 = "http://www.") */
         };
@@ -308,15 +312,16 @@ public: // Access specifier
                                     0xC1,
                                     0xFF,
                                     0x12,
-                                    piccDataOffset & 0xff,
-                                    (piccDataOffset >> 8) & 0xff,
-                                    (piccDataOffset >> 16) & 0xff,
-                                    sdmMacOffset & 0xff,
-                                    (sdmMacOffset >> 8) & 0xff,
-                                    (sdmMacOffset >> 16) & 0xff,
-                                    sdmMacOffset & 0xff,
-                                    (sdmMacOffset >> 8) & 0xff,
-                                    (sdmMacOffset >> 16) & 0xff};
+                                    (uint8_t) (piccDataOffset & 0xff),
+                                    (uint8_t) ((piccDataOffset >> 8) & 0xff),
+                                    (uint8_t) ((piccDataOffset >> 16) & 0xff),
+                                    (uint8_t) (sdmMacOffset & 0xff),
+                                    (uint8_t) ((sdmMacOffset >> 8) & 0xff),
+                                    (uint8_t) ((sdmMacOffset >> 16) & 0xff),
+                                    (uint8_t) (sdmMacOffset & 0xff),
+                                    (uint8_t) ((sdmMacOffset >> 8) & 0xff),
+                                    (uint8_t) ((sdmMacOffset >> 16) & 0xff)
+                                    };
           nfc->ntag424_ChangeFileSettings((uint8_t)2, fileSettings,
                                           (uint8_t)sizeof(fileSettings),
                                           (uint8_t)NTAG424_COMM_MODE_FULL);

@@ -45,7 +45,7 @@
 
 #define HTTP_CREDENTIAL_SIZE 16
 
-//iuf you change this do not exceed HTTP_CREDENTIAL_SIZE-1 chars!
+//if you change this do not exceed HTTP_CREDENTIAL_SIZE-1 chars!
 const char* http_default_username = "bolty";
 const char* http_default_password = "bolty";
 
@@ -105,6 +105,7 @@ uint8_t active_bolt_config;
 sBoltConfig mBoltConfig;
 
 bool signal_update_screen = false;
+int signal_restart_delayed = 0;
 
 bool bolty_hw_ready = false;
 
@@ -308,6 +309,11 @@ String processor_default(const String &var){
     return mBoltConfig.k3;
   if (var == "k4")
     return mBoltConfig.k4;
+  if (var == "wifista")
+	return String(mSettings.wifimode);
+  if (var == "essid")
+	if (mSettings.wifimode == WIFIMODE_STA)
+		return String(mSettings.essid);
   return String();
 }
 
@@ -429,11 +435,6 @@ void wifi_stop() {
 }
 
 void wifi_start() {
-  // if we have credentials try connecting. WIFIMODE_STA will fallback to
-  // mSettings.wifimode == WIFIMODE_AP
-  if ((mSettings.essid != "") && (mSettings.password != "")) {
-    mSettings.wifimode = WIFIMODE_STA;
-  }
   if (mSettings.wifimode == WIFIMODE_AP) {
 #ifndef WIFI_AP_PASSWORD_STATIC
     randomchar(ap_password, sizeof(ap_password));
@@ -441,7 +442,6 @@ void wifi_start() {
     WiFi.softAP(ap_ssid, ap_password);
     myIP = WiFi.softAPIP();
   }
-
   uint8_t connect_count = 0;
   if (mSettings.wifimode == WIFIMODE_STA) {
     WiFi.begin(mSettings.essid, mSettings.password);
@@ -472,7 +472,7 @@ void wifi_start() {
     mSettings.wifi_enabled = true;
     saveSettings();
     //set wifimode  after savesettings. we dont want to persist it if we fallback to apmode.
-    if ((mSettings.wifimode == WIFIMODE_STA) && (connect_count <= 10)) {
+    if ((mSettings.wifimode == WIFIMODE_STA) && (connect_count >= 10)) {
       mSettings.wifimode = WIFIMODE_AP;
     }
   }
@@ -585,7 +585,10 @@ void app_stateengine() {
   if (signal_update_screen){
       update_screen();
   }
-
+  if (signal_restart_delayed > 0){
+    delay(3000);
+    ESP.restart();
+  }
   if (app_next >= APPS)
     app_next = 0;
   // do not switch to keysetup using buttons
@@ -886,7 +889,7 @@ void setup(void) {
         if (data["essid"] != "") {
           strcpy(mSettings.essid, data["essid"]);
         }
-        if (data["password"] != "") {
+        if ((data["password"] != "*123--keep-my-current-password--321*")) {
           strcpy(mSettings.password, data["password"]);
         }
         if (data["wifimode"] == "sta") {
@@ -897,7 +900,7 @@ void setup(void) {
         saveSettings();
         request->send(200, "application/json",
                       "{\"status\":\"received_keys\"}");
-        ESP.restart();
+        signal_restart_delayed = 2000;
       });
   server.addHandler(handlerwifi);
   

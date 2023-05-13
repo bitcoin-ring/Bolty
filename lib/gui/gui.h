@@ -220,7 +220,7 @@ void drawscreen(void *data) {
   }
 };
 
-bool displayQR(String input) {
+void displayQR(String input) {
   // This code from https://github.com/arcbtc/koopa/blob/master/main.ino
 
   // auto detect best qr code size
@@ -281,7 +281,7 @@ bool displayQR(String input) {
   delay(10000);
 }
 
-bool SendQR(String input, AsyncResponseStream *response) {
+void SendQR(String input, AsyncResponseStream *response) {
   // This code from https://github.com/arcbtc/koopa/blob/master/main.ino
 
   // auto detect best qr code size

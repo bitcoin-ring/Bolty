@@ -8,6 +8,7 @@
 <script language="javascript">
     let wprot = "";
     let whost = "%wallet_host%";
+    let wifista = "%wifista%";
     var wurl = "";
 </script>
 <meta charset="utf-8">
@@ -26,7 +27,7 @@
 <b>Bolty - Setup</b><br />
 <div class="name"><a class="dev" href="?d=p"><</a>%cnn%. %cn%<a class="dev" href="?d=n">></a></div> 
 </div>
-<div class="info">
+<div class="info" id="info">
 <div class="k" id="u">
 URL: %url%
 </div>
@@ -46,7 +47,7 @@ Key 3: %ks3%
 Key 4: %ks4%
 </div>
 </div>
-<div class="button act onl">
+<div class="button act onl sta">
 <a data-target="sm3" data-toggle="modal">new wallet</a>
 </div>
 <div class="button act onl">
@@ -107,18 +108,18 @@ Key 4: %ks4%
   </div>
 </div>
 <div id="sm2" class="modal">
-  <div class="modal-window">
+  <div class="modal-window" id="sm2mod">
       <h3>Wifi Setup</h3>
-      <form data-t="/wifi">
+      <form data-t="/wifi" data-r="rhndwifi">
       <div class="cf">
       <input type="radio" name="wifimode" id="mode-ap" value="ap"/><label for="mode-ap" class="ra">access point (random credentials)</label><br>
       <input type="radio" name="wifimode" id="mode-sta" value="sta"/><label for="mode-sta" class="plra">join network</label><br>
       </div>
       <div class="cf">
-      <input type="text" id="essid" required /><label for="essid" class="pl">wifi essid</label><br>
+      <input type="text" id="essid" value="%essid%" required /><label for="essid" class="pl">wifi essid</label><br>
       </div>
       <div class="cf">
-      <input type="password" id="password" required /><label for="password" class="pl">wifi password</label><br>
+      <input type="password" id="password" value="*123--keep-my-current-password--321*" required /><label for="password" class="pl">wifi password</label><br>
       </div>
       <div class="cf">
       <input type="button" id="wisave" value="save" required /><br>

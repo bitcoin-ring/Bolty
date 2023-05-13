@@ -29,7 +29,7 @@ function sd(d){
     dgEBI('u').innerHTML=h + " " + d;
 }
 
-function updateform(url, data){
+function updateform(url, data, rhandle){
     xhruf = new XMLHttpRequest();
     xhruf.open("POST", url, true);
     xhruf.setRequestHeader('Content-Type', 'application/json')
@@ -42,7 +42,12 @@ function updateform(url, data){
                 return false;
             }
             let o = JSON.parse(xhruf.responseText);
-            window.location.href = window.location.origin + window.location.pathname;
+            if (rhandle){
+				rhandle(o);
+			}
+			else{
+				window.location.href = window.location.origin + window.location.pathname;
+			}
         }
     };
     xhruf.send(JSON.stringify(data));
@@ -140,6 +145,17 @@ window.onload = function() {
           col[i].style.display = "none";
         }
     }   
+    if (wifista != "1"){
+		dgEBI("mode-ap").checked = true;
+        col = document.getElementsByClassName("sta");
+        for (let i = 0; i < col.length; i++) {
+          col[i].style.visibility = "hidden";
+          col[i].style.display = "none";
+        }
+    }   
+    if (wifista == "1"){
+		dgEBI("mode-sta").checked = true;
+	}
     let i = dgEBI('ki');
     i.addEventListener('keyup', function () {
         t = Date.now();
@@ -255,7 +271,11 @@ window.onload = function() {
                 url = document.location.origin + target.form.getAttribute("data-t");
                 console.log(url);
                 console.log(data);
-                updateform(url, data);
+				rhandle = null;
+                if (target.form.hasAttribute("data-r")){
+					rhandle = window[target.form.getAttribute("data-r")];
+				}
+                updateform(url, data, rhandle);
             }
         }
         // Close modal window with 'data-dismiss' attribute or when the backdrop is clicked
@@ -385,3 +405,6 @@ function makeid(length) {
     return result;
 }    
 
+function rhndwifi(r){
+	dgEBI("sm2mod").innerHTML = '<h3>Wifi Setup</h3><div style="color:#ff0000; font-size: 1.5em;">The wifi-settings have been updated. You might need to change your wifi and check bolty for the ip-adress to connect to.<br/><br/></div>';
+}
