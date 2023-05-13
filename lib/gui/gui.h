@@ -79,8 +79,6 @@ int displayTextCentered(int y, String txt) {
 
 int displayTextLeft(int y, String txt) {
   // center the text
-  int16_t x1, y1;
-  int16_t w = tft.textWidth(txt);
   int16_t h = tft.fontHeight();
   tft.setCursor(3, y);
   tft.print(txt);
@@ -209,7 +207,7 @@ void handlebuttonevents(void *data) {
     }
     }
     button_loop();
-    delay(30);
+    delay(60);
   }
 }
 
@@ -323,9 +321,6 @@ void SendQR(String input, AsyncResponseStream *response) {
   qrcode_initText(&qrcode, qrcodeData, qrSize, ec_lvl, input.c_str());
 
   Serial.printf("saw qr mode = %d\n", qrcode.mode);
-
-  int xoff = tft.width() / 2 - qrcode.size;
-  int yoff = tft.height() / 2 - qrcode.size;
   // tft.fillScreen(APPWHITE);
 
   for (uint8_t y = 0; y < qrcode.size; y++) {
@@ -371,7 +366,6 @@ void button_init() {
   btn2.setLongClickHandler([](Button2 &b) {
     // displayText(2,2,"btn2 click");
     sharedvars.appbuttons[1] = 2;
-    unsigned int time = b.wasPressedFor();
   });
   btn2.setDoubleClickHandler([](Button2 &b) {
     // displayText(2,2,"btn2 click");

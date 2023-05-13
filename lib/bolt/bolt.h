@@ -271,7 +271,6 @@ public: // Access specifier
         nfc->ntag424_ISOSelectFileById(fileid);
         fileid = 0xe104;
         nfc->ntag424_ISOSelectFileById(fileid);
-        uint8_t FileSetting[16];
         uint8_t uriIdentifier = 0;
         uint8_t piccDataOffset = lnurl.length() + 10;
         uint8_t sdmMacOffset = lnurl.length() + 45;
@@ -393,10 +392,7 @@ public: // Access specifier
         nfc->ntag424_ISOSelectFileById(fileid);
         fileid = 0xe104;
         nfc->ntag424_ISOSelectFileById(fileid);
-        uint8_t uriIdentifier = 0;
-        char url[] = " ";
         // Figure out how long the string is
-        uint8_t len = strlen(url);
         uint8_t keyno = 0;
         uint8_t authenticated =
             nfc->ntag424_Authenticate(key_cur[keyno], keyno, 0x71);
@@ -407,8 +403,6 @@ public: // Access specifier
         if (authenticated == 1) {
           Serial.println("Authentication successful.");
           Serial.println("Disable Mirroring and SDM.");
-          int piccDataOffset = 81;
-          int sdmMacOffset = 116;
 
           uint8_t fileSettings[] = {0x00, 0xE0, 0xEE};
 

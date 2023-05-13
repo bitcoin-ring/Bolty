@@ -200,8 +200,8 @@ void loadBoltConfig(uint8_t slot) {
   Serial.print(path);
   Serial.println(sizeof(((sBoltConfig *)0)->url));
   memset(&mBoltConfig, 0, sizeof(sBoltConfig));
-  uint8_t testurl_enc[sizeof(((sBoltConfig *)0)->url)];
-  uint8_t testurl[sizeof(((sBoltConfig *)0)->url)];
+  //uint8_t testurl_enc[sizeof(((sBoltConfig *)0)->url)];
+  //uint8_t testurl[sizeof(((sBoltConfig *)0)->url)];
   if (SPIFFS.exists(path) == 1) {
     Serial.println(" found");
     fs::File myFile = SPIFFS.open(path, FILE_READ);
@@ -264,7 +264,9 @@ void app_keysetup_loop() {
     tft.setTextColor(APPRED);
     if (bolty_hw_ready){
       bool success = bolt.scanUID();
-      app_message = bolt.getScannedUid();
+      if (success){
+        app_message = bolt.getScannedUid();
+      }
     }
     if (app_message == "") {
       app_message = default_app_message;
