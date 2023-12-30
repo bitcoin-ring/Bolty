@@ -64,12 +64,12 @@ Make shure the microswitch on the NFC breakoutboard is set to SPI-configuration.
 	- Button2 version 1.2.0
 	- qrcode version 0.0.1
 	- TFT_eSPI version 2.2.20
+	- ESP32-targz 1.2.0
 
-2. Open the bolty.ino in Arduino-IDE and upload the data-folder using "Esp32 Sketch Data Upload":
+2. Compile and upload the firmware to the ESP32 board.
 
-3. Compile and upload the firmware to the ESP32 board.
-
-4. Power on the device and wait for the display to show you a set of wifi credentials. Bolty can either work in AP-mode or STA-Mode. Default is AP-Mode and the ESS-ID is always "Bolty", the password is random, also you should see an ip-adress at the bottom of the screen.
+3. Power on the device and wait for the display to show you a set of wifi credentials. The first startup takes a few seconds longer as the flash-memory is initialized. 
+Bolty can either work in AP-mode or STA-Mode. Default is AP-Mode and the ESS-ID is always "Bolty", the password is random, also you should see an ip-adress at the bottom of the screen.
 
 ## Usage
 1. Ensure your Bolty device is powered on and your computer or mobile is connected to the Wi-Fi network on the display.
