@@ -53,20 +53,15 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 
 1. Install the [platformio](https://docs.platformio.org/en/latest/core/installation/methods/index.html) build system.
 
-2. Upload the data folder to the spiffs-partition.
-In the project-directory run:
-> platformio run -t uploadfs
-
-**Attention: Step 2. should only be done for the first time. If you repeat it at a later stage all keydata and settings on the esp32 will be lost.**
-
-3. Compile and upload the firmware
+2. Compile and upload the firmware
 In the project-directory run:
 > platformio run -t upload
 
-4. Power on the device and wait for the display to show you a set of wifi credentials. Bolty can either work in AP-mode or STA-Mode. Default is AP-Mode and the ESS-ID is always "Bolty", the password is random, also you should see an ip-adress at the bottom of the screen.
+3. Power on the device and wait for the display to show you a set of wifi credentials. Bolty can either work in AP-mode or STA-Mode. Default is AP-Mode and the ESS-ID is always "Bolty", the password is random, also you should see an ip-adress at the bottom of the screen.
 
 ## Usage
-1. Ensure your Bolty device is powered on and your computer or mobile is connected to the Wi-Fi network on the display.
+1. Ensure your Bolty device is powered on and your computer or mobile is connected to the Wi-Fi network on the display.  
+The first startup takes a few seconds longer as the flash-memory is initialized.
 
 2. Access the web interface of the Bolty device by navigating to the IP address displayed at the bottom part of screen using a web browser.
 There are 3 menu items in the browser. Click on "SETUP" at the left side.
