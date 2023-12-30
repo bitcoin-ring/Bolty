@@ -18,6 +18,7 @@
 
 */
 /**************************************************************************/
+#include <Arduino.h>
 #include "bolt.h"
 #include "gui.h"
 #include <SPI.h>
@@ -32,6 +33,10 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include <WiFiAP.h>
+#define DEST_FS_USES_SPIFFS
+#include <ESP32-targz.h>
+#include "tarstream.h"
+#include "tardata.h"
 
 #define WIFIMODE_AP 0
 #define WIFIMODE_STA 1
@@ -48,7 +53,6 @@
 //iuf you change this do not exceed HTTP_CREDENTIAL_SIZE-1 chars!
 const char* http_default_username = "bolty";
 const char* http_default_password = "bolty";
-
 
 #define MAX_BOLT_DEVICES 5
 char charpool[] = {
@@ -129,6 +133,40 @@ void saveSettings() {
   fs::File myFile = SPIFFS.open(path, FILE_WRITE);
   myFile.write((byte *)&mSettings, sizeof(sSettings));
   myFile.close();
+}
+
+//Extract files needed by the webserver from the data in tardata.h
+void extractfiles(){
+    Serial.println("Extracting files");
+    Stream *HTMLTarStream = new TarStream(data_tar, (size_t) data_tar_len);
+    TarUnpacker *TARUnpacker = new TarUnpacker();
+    TARUnpacker->haltOnError(true);                                                            // stop on fail (manual restart/reset required)
+    TARUnpacker->setTarVerify(true);                                                           // true = enables health checks but slows down the overall process
+    TARUnpacker->setupFSCallbacks(targzTotalBytesFn, targzFreeBytesFn);                        // prevent the partition from exploding, recommended
+    TARUnpacker->setLoggerCallback(BaseUnpacker::targzPrintLoggerCallback);                    // gz log verbosity
+    TARUnpacker->setTarProgressCallback(BaseUnpacker::defaultProgressCallback);                // prints the untarring progress for each individual file
+    TARUnpacker->setTarStatusProgressCallback(BaseUnpacker::defaultTarStatusProgressCallback); // print the filenames as they're expanded
+    TARUnpacker->setTarMessageCallback(BaseUnpacker::targzPrintLoggerCallback);                // tar log verbosity  
+    if (!TARUnpacker->tarStreamExpander(HTMLTarStream, data_tar_len, tarGzFS, "/")){
+      Serial.println("Error while unpacking the webserver files5");
+      return;
+    }
+    //write version info
+    fs::File myFile = SPIFFS.open("/fsversion.dat", FILE_WRITE);
+    myFile.write((byte *) &fsversion, sizeof(fsversion));
+    myFile.close();
+
+    Serial.println("done!");
+    
+}
+
+int checkFsVersion(){
+  int myversion = -1;
+  fs::File myFile = SPIFFS.open("/fsversion.dat", FILE_READ);
+  myFile.read((byte *) &myversion, sizeof(myversion));
+  myFile.close();
+  Serial.println(myversion);
+  return myversion;
 }
 
 void loadSettings() {
@@ -340,6 +378,15 @@ String processor_default(const String &var){
     return mBoltConfig.k3;
   if (var == "k4")
     return mBoltConfig.k4;
+  if (var == "wifista")
+        return String(mSettings.wifimode);
+  if (var == "essid")
+        if (mSettings.wifimode == WIFIMODE_STA)
+                return String(mSettings.essid);
+  /*if (var == "essid")
+    //if (mSettings.wifimode == WIFIMODE_STA)
+    return String(mSettings.essid);
+   */
   return String();
 }
 
@@ -692,6 +739,35 @@ void setup(void) {
     delay(10); // for Leonardo/Micro/Zero
   // setup tft display
   setup_display();
+  // Initialize SPIFFS
+  if (!tarGzFS.begin()) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    #if defined DEST_FS_USES_SPIFFS || defined DEST_FS_USES_LITTLEFS
+        Serial.println("Initializing flash!");
+        displayMessage("init flash...", 0);
+        tarGzFS.format();
+    #endif
+    if (!tarGzFS.begin()){
+      Serial.println("Failed to mount filesystem!");
+      while (true)
+        delay(1000);
+    }
+    displayMessage("extract files...", 0);
+    extractfiles();
+  }
+
+  if ((!SPIFFS.exists("/wipe.html")) || (!SPIFFS.exists("/fsversion.dat"))) {
+    Serial.println("Could not find files!");
+    displayMessage("extract files", 0);
+    extractfiles();
+  }
+  else if (checkFsVersion() < fsversion) {
+    Serial.println("updating");
+    displayMessage("updating...", 0);
+    extractfiles();
+  }
+  
+  displayMessage("setup nfc", 0);
   pinMode(PN532_RSTPD_N, OUTPUT);
   nfc_start();
   bolty_hw_ready = bolt.begin();
@@ -723,15 +799,11 @@ void setup(void) {
   mAppHandler[APP_BOLTWIPE].app_fgcolor = APPBLACK;
   mAppHandler[APP_BOLTWIPE].app_bgcolor = fromrgb(0xee, 0xa0, 0xa0);
 
-  // Initialize SPIFFS
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
   // initialize the bolt configurations
   active_bolt_config = 0;
   loadBoltConfig(active_bolt_config);
-  Serial.println("Configuring access point...");
+  Serial.println("Loading settings...");
+  displayMessage("load settings", 0);
   loadSettings();
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -934,6 +1006,8 @@ void setup(void) {
       "/upload", HTTP_POST,
       [](AsyncWebServerRequest *request) { request->send(200); }, handleUpload);
 
+  Serial.println("Wifi setup...");
+  displayMessage("Wifi setup", 0);
   if (mSettings.wifi_enabled) {
     wifi_start();
     IPAddress myIP;
@@ -944,6 +1018,7 @@ void setup(void) {
 }
 
 void loop(void) {
+
   app_stateengine();
 
   delay(100);

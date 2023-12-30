@@ -5,7 +5,7 @@
 #include "ESPAsyncWebSrv.h"
 #include <SPI.h>
 #include <TFT_eSPI.h>
-#include <qrcode.h>
+#include <qrcode_rep.h>
 
 /*#define TFT_MOSI            19
   #define TFT_SCLK            18
@@ -79,12 +79,18 @@ int displayTextCentered(int y, String txt) {
 
 int displayTextLeft(int y, String txt) {
   // center the text
-  int16_t x1, y1;
-  int16_t w = tft.textWidth(txt);
   int16_t h = tft.fontHeight();
   tft.setCursor(3, y);
   tft.print(txt);
   return (y + h) * 1.01;
+}
+
+void displayMessage(String txt, uint8_t line){
+    tft.setFreeFont(&FreeSans9pt7b);
+    tft.setTextColor(APPWHITE);
+    tft.fillRect(0, line , tft.width(), 23, APPBLACK);
+    displayTextCentered(-3 + ((line + 1) * 21), txt);
+    tft.setTextColor(APPBLACK);  
 }
 
 uint16_t v = 0;
@@ -279,6 +285,7 @@ bool displayQR(String input) {
     }
   }
   delay(10000);
+  return true;
 }
 
 bool SendQR(String input, AsyncResponseStream *response) {
@@ -324,8 +331,6 @@ bool SendQR(String input, AsyncResponseStream *response) {
 
   Serial.printf("saw qr mode = %d\n", qrcode.mode);
 
-  int xoff = tft.width() / 2 - qrcode.size;
-  int yoff = tft.height() / 2 - qrcode.size;
   // tft.fillScreen(APPWHITE);
 
   for (uint8_t y = 0; y < qrcode.size; y++) {
@@ -341,6 +346,7 @@ bool SendQR(String input, AsyncResponseStream *response) {
     }
     response->print("<br/>");
   }
+  return true;
 }
 
 void button_init() {
@@ -371,7 +377,6 @@ void button_init() {
   btn2.setLongClickHandler([](Button2 &b) {
     // displayText(2,2,"btn2 click");
     sharedvars.appbuttons[1] = 2;
-    unsigned int time = b.wasPressedFor();
   });
   btn2.setDoubleClickHandler([](Button2 &b) {
     // displayText(2,2,"btn2 click");
