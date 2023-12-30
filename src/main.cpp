@@ -32,6 +32,10 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include <WiFiAP.h>
+#define DEST_FS_USES_SPIFFS
+#include <ESP32-targz.h>
+#include "tarstream.h"
+#include "tardata.h"
 
 #define WIFIMODE_AP 0
 #define WIFIMODE_STA 1
@@ -124,6 +128,41 @@ struct sAppHandler {
 
 sAppHandler mAppHandler[APPS];
 
+//Extract files needed by the webserver from the data in tardata.h
+void extractfiles(){
+    Serial.println("Extracting files");
+    Stream *HTMLTarStream = new TarStream(data_tar, (size_t) data_tar_len);
+    TarUnpacker *TARUnpacker = new TarUnpacker();
+    TARUnpacker->haltOnError(true);                                                            // stop on fail (manual restart/reset required)
+    TARUnpacker->setTarVerify(true);                                                           // true = enables health checks but slows down the overall process
+    TARUnpacker->setupFSCallbacks(targzTotalBytesFn, targzFreeBytesFn);                        // prevent the partition from exploding, recommended
+    TARUnpacker->setLoggerCallback(BaseUnpacker::targzPrintLoggerCallback);                    // gz log verbosity
+    TARUnpacker->setTarProgressCallback(BaseUnpacker::defaultProgressCallback);                // prints the untarring progress for each individual file
+    TARUnpacker->setTarStatusProgressCallback(BaseUnpacker::defaultTarStatusProgressCallback); // print the filenames as they're expanded
+    TARUnpacker->setTarMessageCallback(BaseUnpacker::targzPrintLoggerCallback);                // tar log verbosity  
+    if (!TARUnpacker->tarStreamExpander(HTMLTarStream, data_tar_len, tarGzFS, "/")){
+      Serial.println("Error while unpacking the webserver files5");
+      return;
+    }
+    //write version info
+    fs::File myFile = SPIFFS.open("/fsversion.dat", FILE_WRITE);
+    myFile.write((byte *) &fsversion, sizeof(fsversion));
+    myFile.close();
+
+    Serial.println("done!");
+    
+}
+
+int checkFsVersion(){
+  int myversion = -1;
+  fs::File myFile = SPIFFS.open("/fsversion.dat", FILE_READ);
+  myFile.read((byte *) &myversion, sizeof(myversion));
+  myFile.close();
+  Serial.println(myversion);
+  return myversion;
+}
+
+
 void dumpconfig() {
   Serial.println(mBoltConfig.wallet_name);
   Serial.println(mBoltConfig.wallet_host);
@@ -146,6 +185,7 @@ void dumpsettings() {
   Serial.println(mSettings.http_username);
   Serial.println(mSettings.http_password);
 }
+
 
 void saveSettings() {
   char path[20];
@@ -697,11 +737,6 @@ void setup(void) {
   while (!Serial)
     delay(10); // for Leonardo/Micro/Zero
   // setup tft display
-  setup_display();
-  pinMode(PN532_RSTPD_N, OUTPUT);
-  nfc_start();
-  bolty_hw_ready = bolt.begin();
-  Serial.println("Setup done!");
   app_active = APP_KEYSETUP;
   app_next = APP_BOLTBURN;
   app_status = APP_STATUS_START;
@@ -729,15 +764,43 @@ void setup(void) {
   mAppHandler[APP_BOLTWIPE].app_fgcolor = APPBLACK;
   mAppHandler[APP_BOLTWIPE].app_bgcolor = fromrgb(0xee, 0xa0, 0xa0);
 
+  setup_display();
   // Initialize SPIFFS
-  if (!SPIFFS.begin(true)) {
+  if (!tarGzFS.begin()) {
     Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
+    #if defined DEST_FS_USES_SPIFFS || defined DEST_FS_USES_LITTLEFS
+        Serial.println("Initializing flash!");
+        displayMessage("init flash...", 0);
+        tarGzFS.format();
+    #endif
+    if (!tarGzFS.begin()){
+      Serial.println("Failed to mount filesystem!");
+      while (true)
+        delay(1000);
+    }
+    displayMessage("extract files...", 0);
+    extractfiles();
   }
-  // initialize the bolt configurations
+
+  if ((!SPIFFS.exists("/wipe.html")) || (!SPIFFS.exists("/fsversion.dat"))) {
+    Serial.println("Could not find files!");
+    displayMessage("extract files", 0);
+    extractfiles();
+  }
+  else if (checkFsVersion() < fsversion) {
+    Serial.println("updating");
+    displayMessage("updating...", 0);
+    extractfiles();
+  }
+  
+  displayMessage("setup nfc", 0);  // initialize the bolt configurations
+  pinMode(PN532_RSTPD_N, OUTPUT);
+  nfc_start();
+  bolty_hw_ready = bolt.begin();
   active_bolt_config = 0;
   loadBoltConfig(active_bolt_config);
-  Serial.println("Configuring access point...");
+  Serial.println("Loading settings...");
+  displayMessage("load settings", 0);
   loadSettings();
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -940,13 +1003,14 @@ void setup(void) {
       "/upload", HTTP_POST,
       [](AsyncWebServerRequest *request) { request->send(200); }, handleUpload);
 
+  Serial.println("Wifi setup...");
+  displayMessage("Wifi setup", 0);
   if (mSettings.wifi_enabled) {
     wifi_start();
     IPAddress myIP;
     SIpAddress = getIpAddress();
     Serial.println(SIpAddress);
   }
-  Serial.println("Server started");
 }
 
 void loop(void) {

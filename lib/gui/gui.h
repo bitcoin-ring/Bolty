@@ -77,6 +77,14 @@ int displayTextCentered(int y, String txt) {
   return (y + h) * 1.01;
 }
 
+void displayMessage(String txt, uint8_t line){
+    tft.setFreeFont(&FreeSans9pt7b);
+    tft.setTextColor(APPWHITE);
+    tft.fillRect(0, line , tft.width(), 23, APPBLACK);
+    displayTextCentered(-3 + ((line + 1) * 21), txt);
+    tft.setTextColor(APPBLACK);  
+}
+
 int displayTextLeft(int y, String txt) {
   // center the text
   int16_t h = tft.fontHeight();
