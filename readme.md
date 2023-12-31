@@ -39,7 +39,7 @@ Bolty is an ESP32-based device with NFC capabilities designed to provision BoltC
 		<tr><td>PIN2</td><td>RSTPDN (optional)</td></tr>
 		<tr><td>PIN17</td><td>SCK</td></tr>
 		</table>
-		Make shure the microswitch on the NFC breakoutboard is set to SPI-configuration.
+		Make sure the microswitch on the NFC breakoutboard is set to SPI-configuration.
 		
 3. Navigate to the bolty/3dfiles folder and 3D print the enclosure files based on your preferences:
 
