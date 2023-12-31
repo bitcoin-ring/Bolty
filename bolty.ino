@@ -139,15 +139,26 @@ void saveSettings() {
 void extractfiles(){
     Serial.println("Extracting files");
     Stream *HTMLTarStream = new TarStream(data_tar, (size_t) data_tar_len);
-    TarUnpacker *TARUnpacker = new TarUnpacker();
-    TARUnpacker->haltOnError(true);                                                            // stop on fail (manual restart/reset required)
-    TARUnpacker->setTarVerify(true);                                                           // true = enables health checks but slows down the overall process
-    TARUnpacker->setupFSCallbacks(targzTotalBytesFn, targzFreeBytesFn);                        // prevent the partition from exploding, recommended
-    TARUnpacker->setLoggerCallback(BaseUnpacker::targzPrintLoggerCallback);                    // gz log verbosity
-    TARUnpacker->setTarProgressCallback(BaseUnpacker::defaultProgressCallback);                // prints the untarring progress for each individual file
-    TARUnpacker->setTarStatusProgressCallback(BaseUnpacker::defaultTarStatusProgressCallback); // print the filenames as they're expanded
-    TARUnpacker->setTarMessageCallback(BaseUnpacker::targzPrintLoggerCallback);                // tar log verbosity  
-    if (!TARUnpacker->tarStreamExpander(HTMLTarStream, data_tar_len, tarGzFS, "/")){
+    //TarUnpacker *TARUnpacker = new TarUnpacker();
+    //TARUnpacker->haltOnError(true);                                                            // stop on fail (manual restart/reset required)
+    //TARUnpacker->setTarVerify(true);                                                           // true = enables health checks but slows down the overall process
+    //TARUnpacker->setupFSCallbacks(targzTotalBytesFn, targzFreeBytesFn);                        // prevent the partition from exploding, recommended
+    //TARGZUnpacker->setGzProgressCallback(BaseUnpacker::defaultProgressCallback ); // targzNullProgressCallback or defaultProgressCallback
+    //TARUnpacker->setLoggerCallback(BaseUnpacker::targzPrintLoggerCallback);                    // gz log verbosity
+    //TARUnpacker->setTarProgressCallback(BaseUnpacker::defaultProgressCallback);                // prints the untarring progress for each individual file
+    //TARUnpacker->setTarStatusProgressCallback(BaseUnpacker::defaultTarStatusProgressCallback); // print the filenames as they're expanded
+    //TARUnpacker->setTarMessageCallback(BaseUnpacker::targzPrintLoggerCallback);                // tar log verbosity  
+    //if (!TARUnpacker->tarStreamExpander(HTMLTarStream, data_tar_len, tarGzFS, "/")){
+    TarGzUnpacker *TARGZUnpacker = new TarGzUnpacker();
+    TARGZUnpacker->haltOnError( true ); // stop on fail (manual restart/reset required)
+    TARGZUnpacker->setTarVerify( true ); // true = enables health checks but slows down the overall process
+    TARGZUnpacker->setupFSCallbacks( targzTotalBytesFn, targzFreeBytesFn ); // prevent the partition from exploding, recommended
+    TARGZUnpacker->setGzProgressCallback( BaseUnpacker::defaultProgressCallback ); // targzNullProgressCallback or defaultProgressCallback
+    TARGZUnpacker->setLoggerCallback( BaseUnpacker::targzPrintLoggerCallback  );    // gz log verbosity
+    TARGZUnpacker->setTarProgressCallback( BaseUnpacker::defaultProgressCallback ); // prints the untarring progress for each individual file
+    TARGZUnpacker->setTarStatusProgressCallback( BaseUnpacker::defaultTarStatusProgressCallback ); // print the filenames as they're expanded
+    TARGZUnpacker->setTarMessageCallback( BaseUnpacker::targzPrintLoggerCallback ); // tar log verbosity
+    if( !TARGZUnpacker->tarGzStreamExpander( HTMLTarStream, tarGzFS ) ) {
       Serial.println("Error while unpacking the webserver files5");
       return;
     }
