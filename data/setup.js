@@ -322,11 +322,53 @@ function lbnewwal(nam, uid, cb){
             lbabx(nam, uid, usr, wal, ap, cb);
         }
         else{
-            pro("Could not create wallet", xhrcw.responseText , function(){alert("ok")});
+            console.log("wallet creation failed, trying to setup account first.");
+            lbnewacc(nam, uid, cb);
+            //pro("Could not create wallet", xhrcw.responseText , function(){alert("ok")});
         }
     };
     console.log(xhrcw.send());
-}  
+}
+  
+
+
+function lbnewacc(nam, uid, cb){
+    //console.log("lbcbc called")
+    accountn = {
+      "name": nam
+    };      
+    xh = new XMLHttpRequest();
+    xh.open("POST", wurl + "/api/v1/account", true);
+    xh.setRequestHeader('Content-Type', 'application/json');
+    xh.setRequestHeader('accept', 'application/json');
+    xh.onerror = function(e) {
+        pro("Could not create account", xhrcw.responseText , function(){alert("ok")});
+    }
+    xh.onload = function() {
+        if ((xh.status == 200) || (xh.status == 201)) {
+            try {
+                account = JSON.parse(xh.responseText);
+                dgEBI('wallet_url').value = dgEBI('wallet_host').value + "wallet?usr=" + account.user;
+                lbabx(nam, uid, account.user, account.id, account.adminkey, cb);
+            }
+            catch(ex) {
+                console.log(ex);
+                return false;
+            }
+        }
+        else{
+            try {
+                edetail = JSON.parse(xh.responseText);
+                pro("Could not create account", edetail['detail'] , function(){}); 
+            }
+            catch(ex) {
+                pro("Could not create account", "unknown error" , function(){}); 
+                return false;
+            }
+        }
+    }
+    xh.send(JSON.stringify(accountn));
+}
 
 function lbabx(nam, uid, usr, wal, ap, cb){
     console.log("lbabx called")
