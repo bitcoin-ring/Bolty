@@ -44,8 +44,8 @@
 
 #define WIFI_AP_PASSWORD_LENGTH 8
 
-// remove next line for random password generation
-#define WIFI_AP_PASSWORD_STATIC "wango123"
+// uncommment the next line for static wifi password
+//#define WIFI_AP_PASSWORD_STATIC "wango123"
 
 #define HTTP_CREDENTIAL_SIZE 16
 
@@ -472,6 +472,17 @@ String web_ringwipe_processor(const String &var) {
 }
 void APP_BOLTWIPE_end() { Serial.println("APP_BOLTWIPE_end"); }
 
+
+void randomchar(char *outbuf, uint8_t count) {
+  for (uint8_t i = 0; i < count; i++) {
+    Serial.print(i);
+    Serial.print(":");
+    outbuf[i] = charpool[random(0, 63)];
+    Serial.println(outbuf[i]);
+  }
+  outbuf[count] = 0;
+}
+
 void wifi_stop() {
   server.end();
   WiFi.mode(WIFI_STA);
@@ -699,15 +710,6 @@ void empty() {
   //
 }
 
-void randomchar(char *outbuf, uint8_t count) {
-  for (uint8_t i = 0; i < count; i++) {
-    Serial.print(i);
-    Serial.print(":");
-    outbuf[i] = charpool[random(0, 63)];
-    Serial.println(outbuf[i]);
-  }
-  outbuf[count] = 0;
-}
 
 // handles uploads
 void handleUpload(AsyncWebServerRequest *request, String filename, size_t index,
