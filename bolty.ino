@@ -45,12 +45,12 @@
 
 #define WIFI_AP_PASSWORD_LENGTH 8
 
-// remove next line for random password generation
-#define WIFI_AP_PASSWORD_STATIC "wango123"
+// uncommment the next line for static wifi password
+//#define WIFI_AP_PASSWORD_STATIC "wango123"
 
 #define HTTP_CREDENTIAL_SIZE 16
 
-//iuf you change this do not exceed HTTP_CREDENTIAL_SIZE-1 chars!
+//if you change this do not exceed HTTP_CREDENTIAL_SIZE-1 chars!
 const char* http_default_username = "bolty";
 const char* http_default_password = "bolty";
 
@@ -109,6 +109,7 @@ uint8_t active_bolt_config;
 sBoltConfig mBoltConfig;
 
 bool signal_update_screen = false;
+int signal_restart_delayed = 0;
 
 bool bolty_hw_ready = false;
 
@@ -159,7 +160,7 @@ void extractfiles(){
     TARGZUnpacker->setTarStatusProgressCallback( BaseUnpacker::defaultTarStatusProgressCallback ); // print the filenames as they're expanded
     TARGZUnpacker->setTarMessageCallback( BaseUnpacker::targzPrintLoggerCallback ); // tar log verbosity
     if( !TARGZUnpacker->tarGzStreamExpander( HTMLTarStream, tarGzFS ) ) {
-      Serial.println("Error while unpacking the webserver files5");
+      Serial.println("Error while unpacking the webserver files");
       return;
     }
     //write version info
@@ -527,7 +528,10 @@ void app_stateengine() {
   if (signal_update_screen){
       update_screen();
   }
-
+  if (signal_restart_delayed > 0){
+    delay(3000);
+    ESP.restart();
+  }
   if (app_next >= APPS)
     app_next = 0;
   // do not switch to keysetup using buttons
@@ -968,7 +972,7 @@ void setup(void) {
         if (data["essid"] != "") {
           strcpy(mSettings.essid, data["essid"]);
         }
-        if (data["password"] != "") {
+        if ((data["password"] != "*123--keep-my-current-password--321*")) {
           strcpy(mSettings.password, data["password"]);
         }
         if (data["wifimode"] == "sta") {
@@ -979,7 +983,7 @@ void setup(void) {
         saveSettings();
         request->send(200, "application/json",
                       "{\"status\":\"received_keys\"}");
-        ESP.restart();
+        signal_restart_delayed = 2000;
       });
   server.addHandler(handlerwifi);
   
